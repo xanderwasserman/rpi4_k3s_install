@@ -1,6 +1,8 @@
 # Raspberry Pi 4 K3S install guide
 
-This is a guide taken from [NetworkChuck](https://www.youtube.com/watch?v=X9fSMGkjtug&t=1183s&ab_channel=NetworkChuck) on how to install k3s on a raspberry pi 4. This also includes a guide on how to install Rancher on a separate server for cluster management.
+This is a guide taken from [NetworkChuck](https://www.youtube.com/watch?v=X9fSMGkjtug&t=1183s&ab_channel=NetworkChuck) on how to install k3s on a raspberry pi 4. I suggest watching his video for a detailed walkthrough. This guide includes some fixes to his guide.
+
+This also includes a guide on how to install Rancher on a separate server for cluster management.
 
 # STEP 1 - Raspberry Pi Headless Setup
 ## Image the SD card using the Raspberry Pi Imager.
@@ -74,4 +76,69 @@ This is for if you want to add additional nodes to your cluster.
 Run this command on your other Raspberry Pi nodes
 ````bash
 curl -sfL https://get.k3s.io | K3S_TOKEN="YOURTOKEN" K3S_URL="https://[your server]:6443" K3S_NODE_NAME="servername" sh -
+````
+
+# STEP 5 - Rancher Install (optional)
+
+*Requires a separate Ubuntu 18.04 VM
+
+
+
+## Create a config file
+Make a few directories:
+````bash
+mkdir /etc/rancher
+mkdir /etc/rancher/rke2
+````
+Create the config file:
+````bash
+nano config.yaml
+````
+
+Save the file with: `ctrl-s, ctrl-x`
+
+## Install Rancher:
+````bash
+curl -sfL https://get.rancher.io | sh - 
+````
+Verify installation:
+````bash
+rancherd --help
+````
+Enable the Rancher service:
+````bash
+systemctl enable rancherd-server.service
+systemctl start rancherd-server.service
+journalctl -eu rancherd-server -f
+````
+Reset the admin password:
+````bash
+rancherd reset-admin
+````
+Log into the Web UI and import the cluster.
+
+Edit the cluster API file :
+````bash
+rancher/rancher-agent:v2.5.8-linux-arm64 #this needs more explanation
+````
+
+
+# STEP 6 - Deploy your 1st APP in k3s!!
+
+Create a new file on the master: 
+
+`harrypotter.yaml` (file included in repo)
+
+Deploy the app:
+````bash
+kubectl apply -f harrypotter.yaml
+kubectl get pods
+````
+# STEP 7 - Expose your App with Node Port
+Create a new file on the master:
+
+`harrypotter_nodeport.yaml` (file included in repo)
+````bash
+kubectl apply -f harrypotter_nodeport.yaml
+kubectl get services
 ````
